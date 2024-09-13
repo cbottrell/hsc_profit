@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS Morphologies_ProFit_HSC_Sersic(
     
     Redshift FLOAT,
     ApparentMagnitude FLOAT,
-    RightAscention FLOAT,
+    RightAscension FLOAT,
     Declination FLOAT,
     Sersic_xcen FLOAT,
     Sersic_ycen FLOAT,

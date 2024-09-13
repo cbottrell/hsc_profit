@@ -42,25 +42,30 @@ def ProFit_HSC_Sersic(
     img_name = f'{img_path}/shalo_{snapnum:03}-{subfindid}_{camera}_HSC_GRIZY.fits'
     out_name = f'{img_path}/profuse_{snapnum:03}-{subfindid}_{camera}_{band}.fits'
 
+    record = {'ProcessFlag': 0,}
+
     # Download image if not already available
     if not os.access(img_name,0):
         base_url = f'http://www.tng-project.org/api'
         img_url = f'{base_url}/{simulation}/snapshots/{snapnum}/subhalos/{subfindid}/skirt/skirt_images_hsc_realistic_{camera}.fits'
         sys_cmd = f'wget -nc -nv --content-disposition --header="API-Key:{api_key}" "{img_url}" -P {img_path}'
-        os.system(sys_cmd)
-
-    # Append profit results to dictionary
+        try:
+            os.system(sys_cmd)
+        except:
+            # Flag input image download as unsuccessful
+            record['ProcessFlag']=2**3
+            if db_commit:
+                dbcmd = mysql_table_update_cmd(record, table, databaseid)
+                mymysql.submit(dbcmd, database=database, cnf_path=cnf_path)
+            return
+            
     hdul_in = fits.open(img_name,mode='readonly')
-    header = hdul_in[f'SUBARU_HSC.{band}'].header
+    header = hdul_in[f'SUBARU_HSC.{band}'].header    
 
-    # Dictionary of results to be added to table
-    record = {
-        'Redshift': float(header["redshift"]),
-        'ApparentMagnitude': float(header["apmag"]),
-        'RightAscention': float(header["ra"]),
-        'Declination': float(header["dec"]),
-        'ProcessFlag': 0,
-    }
+    record['Redshift'] = float(header["redshift"])
+    record['ApparentMagnitude'] = float(header["apmag"])
+    record['RightAscension'] = float(header["ra"])
+    record['Declination'] = float(header["dec"])
 
     # Run Pro-tools on image in R
     if not os.access(out_name,0):
@@ -77,10 +82,11 @@ def ProFit_HSC_Sersic(
     try: 
         hdul_out = fits.open(out_name, mode='readonly')
     except:
-        # Flag if parametric fitting was unsuccessful, update database
+        # Flag if parametric fitting was unsuccessful
         record['ProcessFlag']+=2**0
-        dbcmd = mysql_table_update_cmd(record, table, databaseid)
-        mymysql.submit(dbcmd, database=database, cnf_path=cnf_path)
+        if db_commit: 
+            dbcmd = mysql_table_update_cmd(record, table, databaseid)
+            mymysql.submit(dbcmd, database=database, cnf_path=cnf_path)
         return
     
     # Long form column names (e.g. sersic.nser), convert to short
@@ -148,10 +154,11 @@ def ProFit_HSC_Sersic(
             moments = moments, psf = psf, pixel_scale = pixscale, redshift = redshift, cosmology = cosmo
         )
     except:
-        # Flag that non-parametric calculations were unsuccessful, submit ProFit results only
+        # Flag that non-parametric calculations were unsuccessful
         record['ProcessFlag']+=2**1
-        dbcmd = mysql_table_update_cmd(record, table, databaseid)
-        mymysql.submit(dbcmd,database=database,cnf_path=cnf_path)
+        if db_commit:
+            dbcmd = mysql_table_update_cmd(record, table, databaseid)
+            mymysql.submit(dbcmd,database=database,cnf_path=cnf_path)
         return
     
     # elliptical and circular sizes
@@ -300,9 +307,9 @@ def main_single():
     # Commit results to database?
     db_commit=True
 
-    snapnum=72
-    subfindid=358817
-    camera='v0'
+    snapnum=73
+    subfindid=196623
+    camera='v2'
     band='g'
 
     # Set up paths to image directories
@@ -317,6 +324,7 @@ def main_single():
         camera=camera, band=band, img_path=img_path, db_commit=db_commit, 
         database=database, table=table,
     )
+    
 
 if __name__=='__main__':
 

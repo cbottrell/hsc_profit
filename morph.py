@@ -15,7 +15,6 @@ def get_skirt_image(universe, simulation, snapnum, subfindid, camera, img_path, 
     '''
     Get specified SKIRT image from virgotng.
     '''
-    
     if not os.access(img_path,0):
         os.system(f'mkdir -p {img_path}')
         
@@ -61,7 +60,6 @@ def image_moments(image,segmap,pflag,plot=False):
     x = np.array(columns,dtype=float)+0.5
     y = np.array(rows,dtype=float)+0.5
     M = np.sum(intensities)
-    print(np.sum(image[mask]))
     # convert to barycentric coordinates
     xbar = np.sum(x*intensities)/M
     ybar = np.sum(y*intensities)/M
