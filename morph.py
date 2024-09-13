@@ -44,50 +44,72 @@ def gaussian_kernel(sigma=3.,dims=(7,7)):
     kernel /= np.sum(kernel)
     return kernel
 
-def image_moments(image,segmap,pflag,plot=False):
+def image_moments(
+    image,segmap,pflag,plot=False,
+    pixelscale=0.168,vmin=18,vmax=30,
+):
     '''
-    Compute galaxy moments from galaxy pixels in [image]. The target galaxy's flag in the segmentation image [segmap] should be [pflag]. All other source flags are irrelevant. The sky pixel flag should be 0. The moments can be computed for all flagged sources in an image iteratively for each [pflag]. Returns dictionary of image moments.
+    Compute galaxy moments from galaxy pixels in [image]. 
+    The target galaxy's flag in the segmentation image [segmap] should be [pflag]. 
+    All other source flags are irrelevant. 
+    The sky pixel flag should be 0. 
+    The moments can be computed for all flagged sources in an image iteratively for each [pflag]. 
+    Returns dictionary of image moments.
     
     References: 
+    https://github.com/asgr/ProFound/blob/master/R/profoundSegim.R
     
-    http://raphael.candelier.fr/?blog=Image%20Moments
-    
-    Image Moments-based Structuring and Tracking of Objects. L. Rocha, L. Velho and P.C.P. Calvalho (2002). URL=http://sibgrapi.sid.inpe.br/col/sid.inpe.br/banon/2002/10.23.11.34/doc/35.pdf
     '''
     mask = (segmap==pflag)
-    rows, columns = np.where(mask)
-    intensities = image[tuple([columns,rows])]
-    x = np.array(columns,dtype=float)+0.5
-    y = np.array(rows,dtype=float)+0.5
-    M = np.sum(intensities)
-    # convert to barycentric coordinates
-    xbar = np.sum(x*intensities)/M
-    ybar = np.sum(y*intensities)/M
+    rows, cols = np.nonzero(mask)
+    fluxes = image[rows,cols]
+    # ignore negative fluxes
+    fluxes[fluxes<0] = 0.
+    
+    m00 = np.sum(fluxes)
+    x = cols + 0.5
+    y = rows + 0.5
+    xbar = np.sum(x * fluxes) / m00
+    ybar = np.sum(y * fluxes) / m00
     x = x-xbar
     y = y-ybar
-    Mxx = np.sum(x**2*intensities)/M
-    Myy = np.sum(y**2*intensities)/M
-    Mxy = np.sum(x*y*intensities)/M
-    Mrr = np.sum(np.sqrt(x**2+y**2)*intensities)/M
-    a = 2*np.sqrt(2*(Mxx+Myy+np.sqrt(4*Mxy**2+(Mxx-Myy)**2)))
-    b = 2*np.sqrt(2*(Mxx+Myy-np.sqrt(4*Mxy**2+(Mxx-Myy)**2)))
-    # position angle relative to x-axis, 0-180 cyclic
-    phi_deg = 0.5*np.arctan(2*Mxy/(Mxx-Myy))*180/np.pi+(Mxx<Myy)*90.
-    phi_deg -= 90
-    phi_deg += (phi_deg<0)*180
+    sxx = np.sum(x**2 * fluxes)
+    syy = np.sum(y**2 * fluxes)
+    sxy = np.sum(x*y * fluxes)
+    xvar = sxx / m00
+    yvar = syy / m00
+    covxy = sxy / m00
+
+    u1 = -xvar-yvar
+    u2 = xvar*yvar - covxy**2
+    eigval_p = (-u1 + np.sqrt(u1**2-4*u2))/2
+    eigval_m = (-u1 - np.sqrt(u1**2-4*u2))/2
+    # add variance of uniform RV in quadrature
+    semimaj = np.sqrt( eigval_p + 1./12 )
+    semimin = np.sqrt( eigval_m + 1./12 )
+    axrat = semimin/semimaj
+    eigvec = (xvar-eigval_p)/covxy
+    ang = 90-np.arctan(eigvec)*180/np.pi
+    ang += (ang<0)*180
+    
     if plot:
         import matplotlib.pyplot as plt
         _fig,_ax = plt.subplots(figsize=(5,5))
         from matplotlib.patches import Ellipse
-        _ax.imshow(image,vmin=-1e-3,vmax=1e-3,origin='lower')
+        _ax.imshow(
+            22.5-2.5*np.log10(image/pixelscale**2), origin='lower',
+            interpolation='None',vmin=vmin,vmax=vmax, cmap='bone'
+        )
         _ax.scatter(xbar,ybar,s=10)
-        e = Ellipse(xy=[xbar,ybar],width=a,height=b, 
+        e = Ellipse(xy=[xbar,ybar],width=semimin,height=semimaj, 
                     edgecolor='red',facecolor='None',alpha=1., 
-                    angle=phi_deg+90,transform=_ax.transData)
+                    angle=ang,transform=_ax.transData)
         _ax.add_artist(e)
-    return {'M00':M,'X':xbar,'Y':ybar, 
-            'Mxx':Mxx,'Myy':Myy,'Mxy':Mxy,'Mrr':Mrr,
-            'a':a,'b':b,'q':b/a,'phi_deg':phi_deg}
+    return {
+        'flux':m00,'xcen':xbar,'ycen':ybar, 'xvar':xvar,
+        'yvar':yvar,'covxy':covxy,'semimaj':semimaj,
+        'semimin':semimin,'axrat':axrat,'ang':ang,
+    }
 
 def make_segmap(data, variance, coords, detect_threshold=0.5, deblend_nthresh=32,
                 filter_kernel=gaussian_kernel(5,(11,11)), deblend_cont=0.001,
@@ -166,13 +188,13 @@ def petrosian_radius(
     masked_stderr[secondary_mask] = np.nan
     skySigma = np.nanstd(data[segmentation==0])
 
-    xc = moments['X']
-    yc = moments['Y']
+    xc = moments['xcen']
+    yc = moments['ycen']
     if not elliptical: 
         phi, q = 0, 1
     else:
-        phi = moments['phi_deg']
-        q = moments['q']
+        phi = moments['ang']
+        q = moments['axrat']
     
     flux_arr, area_arr, error_arr = pf.photometry.radial_photometry(
         masked_data, (xc, yc), r_list, error=masked_stderr, 
@@ -199,11 +221,11 @@ def total_flux_fraction(radius,
     else:
         if elliptical:
             ap = photutils.aperture.EllipticalAperture(
-                (moments['X'],moments['Y']),a=radius, b=radius*moments['q'],
-                theta=moments['phi_deg']*np.pi/180+np.pi/2)
+                (moments['xcen'],moments['ycen']),a=radius, b=radius*moments['axrat'],
+                theta=moments['ang']*np.pi/180+np.pi/2)
         else:
             ap = photutils.aperture.CircularAperture(
-                (moments['X'],moments['Y']),radius)
+                (moments['xcen'],moments['ycen']),radius)
 
         # Force flux sum to be positive:
         ap_flux = np.abs(ap.do_photometry(data * primary_mask, method='exact')[0][0])
@@ -222,11 +244,11 @@ def radius_total_flux_fraction(
     """
     if elliptical:
         ap_total = photutils.aperture.EllipticalAperture(
-            (moments['X'],moments['Y']),a=total_radius, b=total_radius*moments['q'],
-            theta=moments['phi_deg']*np.pi/180+np.pi/2)
+            (moments['xcen'],moments['ycen']),a=total_radius, b=total_radius*moments['axrat'],
+            theta=moments['ang']*np.pi/180+np.pi/2)
     else:
         ap_total = photutils.aperture.CircularAperture(
-            (moments['X'],moments['Y']),total_radius)
+            (moments['xcen'],moments['ycen']),total_radius)
 
     total_flux = ap_total.do_photometry(data * primary_mask, method='exact')[0][0]
 
@@ -376,7 +398,7 @@ class nonparametric:
         
         self.flag = 0
         
-        self.moments_center = (self.moments['X'], self.moments['Y'])
+        self.moments_center = (self.moments['xcen'], self.moments['ycen'])
         
         # Some statistics for source and background
         
@@ -555,8 +577,8 @@ class nonparametric:
         elif kind == 'outer':
             a_in = self.r50_ellipse
             a_out = self.rmax_ellipse
-            b_out = a_out * self.moments['q']
-            theta = self.moments['phi_deg']*np.pi/180+np.pi/2
+            b_out = a_out * self.moments['axrat']
+            theta = self.moments['ang']*np.pi/180+np.pi/2
             assert (a_in > 0) & (a_out > 0)
             ap = photutils.aperture.EllipticalAnnulus(center, a_in, a_out, b_out, theta=theta)
         elif kind == 'shape':
@@ -605,7 +627,7 @@ class nonparametric:
         Find the position of the central pixel (relative to the
         "postage stamp" cutout) that minimizes the (CAS) asymmetry.
         """
-        center = np.array([self.moments['X'], self.moments['Y']])  # initial guess
+        center = np.array([self.moments['xcen'], self.moments['ycen']])  # initial guess
         
         center_asym = opt.fmin(self._asymmetry_function, center,
                                args=(data, kind),
@@ -682,7 +704,7 @@ class nonparametric:
         Asymmetry center computed using all primary source pixels
         without aperture photometry. 
         """
-        center = np.array([self.moments['X'], self.moments['Y']])  # initial guess
+        center = np.array([self.moments['xcen'], self.moments['ycen']])  # initial guess
         
         center_asym = opt.fmin(self._asymmetry_function_no_aperture, center,
                                args=(data, kind),
@@ -805,12 +827,12 @@ class nonparametric:
         # Distances from all pixels to the center
         ypos, xpos = np.mgrid[0:ny, 0:nx]
 
-        theta = self.moments['phi_deg']*np.pi/180+np.pi/2
+        theta = self.moments['ang']*np.pi/180+np.pi/2
         y, x = np.mgrid[0:ny, 0:nx]
 
         xprime = (x-xc)*np.cos(theta) + (y-yc)*np.sin(theta)
         yprime = -(x-xc)*np.sin(theta) + (y-yc)*np.cos(theta)
-        r_ellipse = np.sqrt(xprime**2 + (yprime/self.moments['q'])**2)
+        r_ellipse = np.sqrt(xprime**2 + (yprime/self.moments['axrat'])**2)
 
         # Only consider pixels within the segmap.
         return np.max(r_ellipse[self.primary_mask])
@@ -829,13 +851,13 @@ class nonparametric:
         masked_stderr[self.secondary_mask] = np.nan
         skySigma = np.nanstd(self.data[self.segmentation==0])
 
-        xc = self.moments['X']
-        yc = self.moments['Y']
+        xc = self.moments['xcen']
+        yc = self.moments['ycen']
         if not elliptical: 
             phi, q = 0, 1
         else:
-            phi = self.moments['phi_deg']
-            q = self.moments['q']
+            phi = self.moments['ang']
+            q = self.moments['axrat']
 
         flux_arr, area_arr, error_arr = pf.photometry.radial_photometry(
             masked_data, (xc, yc), r_list, error=masked_stderr, 
@@ -860,11 +882,11 @@ class nonparametric:
         else:
             if elliptical:
                 ap = photutils.aperture.EllipticalAperture(
-                    (self.moments['X'],self.moments['Y']),a=radius, b=radius*self.moments['q'],
-                    theta=self.moments['phi_deg']*np.pi/180+np.pi/2)
+                    (self.moments['xcen'],self.moments['ycen']),a=radius, b=radius*self.moments['axrat'],
+                    theta=self.moments['ang']*np.pi/180+np.pi/2)
             else:
                 ap = photutils.aperture.CircularAperture(
-                    (self.moments['X'],self.moments['Y']),radius)
+                    (self.moments['xcen'],self.moments['ycen']),radius)
 
             # Force flux sum to be positive:
             ap_flux = np.abs(ap.do_photometry(self.data * self.primary_mask, method='exact')[0][0])
@@ -882,12 +904,12 @@ class nonparametric:
         """
         if elliptical:
             ap_total = photutils.aperture.EllipticalAperture(
-                (self.moments['X'],self.moments['Y']),
-                a=total_radius, b=total_radius*self.moments['q'],
-                theta=self.moments['phi_deg']*np.pi/180+np.pi/2)
+                (self.moments['xcen'],self.moments['ycen']),
+                a=total_radius, b=total_radius*self.moments['axrat'],
+                theta=self.moments['ang']*np.pi/180+np.pi/2)
         else:
             ap_total = photutils.aperture.CircularAperture(
-                (self.moments['X'],self.moments['Y']),total_radius)
+                (self.moments['xcen'],self.moments['ycen']),total_radius)
 
         total_flux = ap_total.do_photometry(self.data * self.primary_mask, method='exact')[0][0]
 
@@ -943,10 +965,10 @@ class nonparametric:
         image = np.where(self.primary_mask, self.data, 0.0)
         image = np.float64(image)  # skimage wants double
         
-        M00 = self.moments['M00']
-        xc, yc = self.moments['X'], self.moments['Y']
-        Mxx = self.moments['Mxx']
-        Myy = self.moments['Myy']
+        M00 = self.moments['flux']
+        xc, yc = self.moments['xcen'], self.moments['ycen']
+        Mxx = self.moments['xvar']
+        Myy = self.moments['yvar']
         second_moment_tot = Mxx + Myy
 
         # Calculate threshold pixel value
@@ -989,7 +1011,7 @@ class nonparametric:
         radius = 0.5 * arcsec_per_kpc / self.pixel_scale 
         
         ap = photutils.aperture.CircularAperture(
-            (self.moments['X'],self.moments['Y']),radius)
+            (self.moments['xcen'],self.moments['ycen']),radius)
         
         ap_sum = ap.do_photometry(self.data * self.primary_mask, method='exact')[0][0]
         ap_area = ap.do_photometry(self.primary_mask, method='exact')[0][0]

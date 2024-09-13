@@ -143,7 +143,7 @@ def ProFit_HSC_Sersic(
         if col not in ['RAcen','Deccen','RAmax','Decmax']:
             record[f'ProFound_{col}'] = r[col]
     
-    moments = morph.image_moments(img, segim, segid, plot=True)
+    moments = morph.image_moments(img, segim, segid)
     pixscale = header['FOVARC']/header['NAXIS1']
     redshift = header['REDSHIFT']
 
@@ -201,12 +201,13 @@ def ProFit_HSC_Sersic(
     record['ResidualAsymmetryNoAperture_ycen'] = npmorph.asymmetry_residual_center_nap[1]
     record['ResidualAsymmetryNoAperture'] = npmorph.asymmetry_residual_nap
 
-    try:
-        dbcmd = mysql_table_update_cmd(record, table, databaseid)
-        mymysql.submit(dbcmd,database=database,cnf_path=cnf_path)
-    except:
-        print(f'Could not add {databaseid} to {table}. Skipping...\n')
-        
+    if db_commit:
+        try:
+            dbcmd = mysql_table_update_cmd(record, table, databaseid)
+            mymysql.submit(dbcmd,database=database,cnf_path=cnf_path)
+        except:
+            print(f'Could not add full record for {databaseid} to {table}. Skipping...\n')
+
     return
         
 
@@ -306,10 +307,10 @@ def main_single():
     database = 'IllustrisTNG50_1'
     table = 'Morphologies_ProFit_HSC_Sersic'
     # Commit results to database?
-    db_commit=True
+    db_commit=False
 
     snapnum=73
-    subfindid=196623
+    subfindid=479757
     camera='v2'
     band='g'
 
