@@ -49,18 +49,22 @@ def ProFit_HSC_Sersic(
         base_url = f'http://www.tng-project.org/api'
         img_url = f'{base_url}/{simulation}/snapshots/{snapnum}/subhalos/{subfindid}/skirt/skirt_images_hsc_realistic_{camera}.fits'
         sys_cmd = f'wget -nc -nv --content-disposition --header="API-Key:{api_key}" "{img_url}" -P {img_path}'
-        try:
-            os.system(sys_cmd)
-        except:
-            # Flag input image download as unsuccessful
-            record['ProcessFlag']=2**3
-            if db_commit:
-                dbcmd = mysql_table_update_cmd(record, table, databaseid)
-                mymysql.submit(dbcmd, database=database, cnf_path=cnf_path)
-            return
-            
-    hdul_in = fits.open(img_name,mode='readonly')
-    header = hdul_in[f'SUBARU_HSC.{band}'].header    
+        os.system(sys_cmd)
+
+    # Check that image is complete after download
+    try: 
+        hdul_in = fits.open(img_name,mode='readonly')
+        header = hdul_in[f'SUBARU_HSC.{band}'].header  
+        img = hdul_in[f'SUBARU_HSC.{band}'].data
+        var = hdul_in[f'SUBARU_HSC.{band} VARIANCE'].data
+        psf = hdul_in[f'SUBARU_HSC.{band} PSF'].data
+    except:
+        # Flag image download as unsuccessful
+        record['ProcessFlag']=2**3
+        if db_commit:
+            dbcmd = mysql_table_update_cmd(record, table, databaseid)
+            mymysql.submit(dbcmd, database=database, cnf_path=cnf_path)
+        return  
 
     record['Redshift'] = float(header["redshift"])
     record['ApparentMagnitude'] = float(header["apmag"])
@@ -116,13 +120,10 @@ def ProFit_HSC_Sersic(
         record[f'Sersic_{col}_std'] = np.std(chain,ddof=1)
         record[f'Sersic_{col}_p84'] = np.percentile(chain,84)-record[f'Sersic_{col}_med']
         record[f'Sersic_{col}_m16'] = np.percentile(chain,16)-record[f'Sersic_{col}_med']
-    
-    img = hdul_in[f'SUBARU_HSC.{band}'].data
-    var = hdul_in[f'SUBARU_HSC.{band} VARIANCE'].data
+
     segim = hdul_out['segim'].data
     segid = hdul_out['segid'].data[0]
     model = hdul_out[f'SUBARU_HSC.{band}.model_im'].data
-    psf = hdul_in[f'SUBARU_HSC.{band} PSF'].data
     residual = img-model
     
     # compute chi2nu for sersic fit (model dof = 7)

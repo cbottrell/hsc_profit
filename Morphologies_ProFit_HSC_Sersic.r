@@ -83,7 +83,7 @@ result = profuseDoFit(
     sigma = sqrt(hdulist[[paste(band,'VARIANCE')]]$imDat),
     segim = regions_stack$segim,
     boundstats=TRUE, rotstats=TRUE, 
-    Ncomp = 1, #just fit a free Sersic, can set to 1.5 and 2 for other version of this script, see ?profuseFound2Fit
+    Ncomp = 1, nser_upper=8.,
     psf = hdulist[[paste(band,'PSF')]]$imDat,
     magzero = 22.5,
     tightcrop = FALSE, #so positions are relative to initial image
