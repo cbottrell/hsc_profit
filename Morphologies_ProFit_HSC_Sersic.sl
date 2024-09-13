@@ -1,11 +1,12 @@
 #!/bin/bash -l
 #SBATCH --account=pawsey0119
 #SBATCH --partition=work
-#SBATCH --ntasks=1
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=8
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=1920M
+#SBATCH --mem=14G
 #SBATCH --time=4:00:00
-#SBATCH --array=0-999%128
+#SBATCH --array=0-127
 #SBATCH --output=slurm/profit_%A_%a.out
 #SBATCH --error=slurm/profit_%A_%a.err
 #SBATCH --job-name=ProFit
@@ -51,7 +52,10 @@ export SIMULATION='TNG50-1'
 export DATABASE='IllustrisTNG50_1'
 export TABLE='Morphologies_ProFit_HSC_Sersic'
 
-export JOB_ARRAY_SIZE=1000
+export JOB_ARRAY_SIZE=4
 export JOB_ARRAY_INDEX=$SLURM_ARRAY_TASK_ID
 
-python Morphologies_ProFit_HSC_Sersic.py
+echo $SLURM_JOB_NUM_NODES
+echo $SLURM_NTASKS
+
+srun -N $SLURM_JOB_NUM_NODES -n $SLURM_NTASKS -c 1 -m block:block:block python Morphologies_ProFit_HSC_Sersic.py

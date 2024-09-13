@@ -142,7 +142,7 @@ def ProFit_HSC_Sersic(
     for col in cols:
         if col not in ['RAcen','Deccen','RAmax','Decmax']:
             record[f'ProFound_{col}'] = r[col]
-    
+
     moments = morph.image_moments(img, segim, segid)
     pixscale = header['FOVARC']/header['NAXIS1']
     redshift = header['REDSHIFT']
@@ -296,6 +296,86 @@ def main_array():
                 database=database, table=table,
             )
 
+
+def main_mpi():
+
+    from mpi4py import MPI
+
+    print('hello')
+
+    # Read in job array size, id from environment
+    # used to partition data for mpi processes
+    array_size = int(os.environ['JOB_ARRAY_SIZE'])
+    array_rank = int(os.environ['JOB_ARRAY_INDEX'])
+
+    # For each array job, get mpi size and rank
+    mpi_size = MPI.COMM_WORLD.Get_size()
+    mpi_rank = MPI.COMM_WORLD.Get_rank()
+    mpi_name = MPI.Get_processor_name()
+
+    # Simulation identifiers
+    universe = 'IllustrisTNG' # os.environ['UNIVERSE'] 
+    simulation = 'TNG50-1' # os.environ['SIMULATION'] 
+
+    # Mysql table identifiers
+    database = 'IllustrisTNG50_1' # os.environ['DATABASE'] 
+    table = 'Morphologies_ProFit_HSC_Sersic' # os.environ['TABLE'] 
+    # Commit results to database?
+    db_commit=True
+
+    # Set limits of snapnum, choose subhalos
+    snapmin = 72
+    snapmax = 91
+    logmstar_min = 9.
+    logmstar_max = 99.
+
+    # Camera angles and bands (independent tasks)
+    cameras = ['v0','v1','v2','v3']
+    bands = ['g','r','i','z','y']
+    
+    dbcmd = ' '.join([
+        f'SELECT SnapNum,SubfindID from Subhalos',
+        f'WHERE SnapNum>={snapmin} and SnapNum<={snapmax}',
+        f'AND SubhaloMassType_stars>={logmstar_min}',
+        f'AND SubhaloMassType_stars<{logmstar_max}',
+        f'ORDER BY snapnum,subfindid'
+    ])
+    df = mymysql.query_df(dbcmd, database=database, cnf_path=cnf_path)
+    indices = np.array(df.index)
+    
+    # Create set of iterables for this job in array
+    iters = np.array(list(itertools.product(indices,cameras,bands)))
+    array_iters = iters[array_rank::array_size]
+
+    # Get iterables for this specific mpi process 
+    mpi_iters = array_iters[mpi_rank::mpi_size]
+        
+    # Loop over tasks assigned to this mpi process
+    for iterable in mpi_iters[::-1]:
+        
+        index = int(iterable[0])
+        row = df.loc[index]
+        snapnum = row['SnapNum']
+        subfindid = row['SubfindID']
+        camera = iterable[1]
+        band = iterable[2]
+
+        print(snapnum,subfindid,camera,band)
+    
+        # Set up paths to image directories
+        virgotng_path = f'{scratch_path}/Simulations/virgotng'
+        sim_path = f'{virgotng_path}/data/{universe}/{simulation}'
+        img_path = f'{sim_path}/postprocessing/skirt_images_hsc/realistic/{snapnum:03}'
+        
+        if not os.access(img_path,0): 
+            os.system(f'mkdir -p {img_path}')
+            
+        ProFit_HSC_Sersic(
+            universe=universe, simulation=simulation, snapnum=snapnum, subfindid=subfindid,
+            camera=camera, band=band, img_path=img_path, db_commit=db_commit, 
+            database=database, table=table,
+        )
+
     
 def main_single():
 
@@ -330,4 +410,4 @@ def main_single():
 
 if __name__=='__main__':
 
-    main_array()
+    main_mpi()
