@@ -1,0 +1,71 @@
+
+The following have been reloaded with a version change:
+  1) py-numpy/1.24.4 => py-numpy/1.26.1
+
+
+The following have been reloaded with a version change:
+  1) py-setuptools/59.4.0-py3.11.6 => py-setuptools/68.0.0-py3.11.6
+
+
+The following have been reloaded with a version change:
+  1) .py-pybind11/2.11.0-5m4sxqi => .py-pybind11/2.11.0-krm3dhq
+  2) .py-python-dateutil/2.8.2-deticwy => .py-python-dateutil/2.8.2-ftuhjdx
+  3) .py-six/1.16.0-tmkol7d => .py-six/1.16.0-zaw75xk
+
+*****************************************************
+Setup - from your laptop do:
+ssh -N -f -L 9100:nid002544:9100 bottrell@setonix.pawsey.org.au
+*****
+The launch directory is: /software/projects/pawsey0119/bottrell/work/Simulations/Scripts/Morphologies
+*****************************************************
+
+*****************************************************
+Terminate - from your laptop do:
+kill $( ps x | grep 'ssh.*-L *9100:nid002544:9100' | awk '{print $1}' )
+*****************************************************
+
+[I 2024-09-13 09:21:23.918 ServerApp] jupyter_lsp | extension was successfully linked.
+[I 2024-09-13 09:21:23.922 ServerApp] jupyter_server_terminals | extension was successfully linked.
+[I 2024-09-13 09:21:23.927 ServerApp] jupyterlab | extension was successfully linked.
+[I 2024-09-13 09:21:23.931 ServerApp] notebook | extension was successfully linked.
+[I 2024-09-13 09:21:24.734 ServerApp] notebook_shim | extension was successfully linked.
+[I 2024-09-13 09:21:24.807 ServerApp] notebook_shim | extension was successfully loaded.
+[I 2024-09-13 09:21:24.808 ServerApp] jupyter_lsp | extension was successfully loaded.
+[I 2024-09-13 09:21:24.810 ServerApp] jupyter_server_terminals | extension was successfully loaded.
+[I 2024-09-13 09:21:24.824 LabApp] JupyterLab extension loaded from /software/projects/pawsey0119/bottrell/python-env/setonix_cpu/lib/python3.11/site-packages/jupyterlab
+[I 2024-09-13 09:21:24.824 LabApp] JupyterLab application directory is /software/projects/pawsey0119/bottrell/python-env/setonix_cpu/share/jupyter/lab
+[I 2024-09-13 09:21:24.825 LabApp] Extension Manager is 'pypi'.
+[I 2024-09-13 09:21:24.836 ServerApp] jupyterlab | extension was successfully loaded.
+[I 2024-09-13 09:21:24.841 ServerApp] notebook | extension was successfully loaded.
+[I 2024-09-13 09:21:24.842 ServerApp] Serving notebooks from local directory: /software/projects/pawsey0119/bottrell/work/Simulations/Scripts/Morphologies
+[I 2024-09-13 09:21:24.842 ServerApp] Jupyter Server 2.14.2 is running at:
+[I 2024-09-13 09:21:24.842 ServerApp] http://nid002544:9100/lab?token=a44399563a55973a4b6d2e256bab32dfa191a9f67617b60e
+[I 2024-09-13 09:21:24.842 ServerApp]     http://127.0.0.1:9100/lab?token=a44399563a55973a4b6d2e256bab32dfa191a9f67617b60e
+[I 2024-09-13 09:21:24.842 ServerApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
+[C 2024-09-13 09:21:24.847 ServerApp] 
+    
+    To access the server, open this file in a browser:
+        file:///home/bottrell/.local/share/jupyter/runtime/jpserver-437244-open.html
+    Or copy and paste one of these URLs:
+        http://nid002544:9100/lab?token=a44399563a55973a4b6d2e256bab32dfa191a9f67617b60e
+        http://127.0.0.1:9100/lab?token=a44399563a55973a4b6d2e256bab32dfa191a9f67617b60e
+[I 2024-09-13 09:21:25.532 ServerApp] Skipped non-installed server(s): bash-language-server, dockerfile-language-server-nodejs, javascript-typescript-langserver, jedi-language-server, julia-language-server, pyright, python-language-server, python-lsp-server, r-languageserver, sql-language-server, texlab, typescript-language-server, unified-language-server, vscode-css-languageserver-bin, vscode-html-languageserver-bin, vscode-json-languageserver-bin, yaml-language-server
+[W 2024-09-13 09:22:00.512 LabApp] Could not determine jupyterlab build status without nodejs
+[I 2024-09-13 09:22:01.119 ServerApp] New terminal with automatic name: 2
+[I 2024-09-13 09:22:01.151 ServerApp] New terminal with automatic name: 3
+[I 2024-09-13 09:22:01.189 ServerApp] New terminal with automatic name: 1
+[I 2024-09-13 09:22:01.226 ServerApp] New terminal with automatic name: 4
+[I 2024-09-13 09:22:02.370 ServerApp] Kernel started: c4bee4b3-b5fa-4f08-a4d7-6eb54e5254e5
+[I 2024-09-13 09:22:06.007 ServerApp] Connecting to kernel c4bee4b3-b5fa-4f08-a4d7-6eb54e5254e5.
+[I 2024-09-13 09:22:06.033 ServerApp] Connecting to kernel c4bee4b3-b5fa-4f08-a4d7-6eb54e5254e5.
+[I 2024-09-13 09:22:06.052 ServerApp] Connecting to kernel c4bee4b3-b5fa-4f08-a4d7-6eb54e5254e5.
+[I 2024-09-13 09:22:13.224 ServerApp] Saving file at /Morphologies_ProFit_HSC_Sersic.sl
+[I 2024-09-13 09:32:04.961 ServerApp] Saving file at /Morphologies_ProFit_HSC_Sersic.sl
+[I 2024-09-13 09:32:12.747 ServerApp] Saving file at /Morphologies_ProFit_HSC_Sersic.sl
+[I 2024-09-13 09:33:51.762 ServerApp] Saving file at /Morphologies_ProFit_HSC_Sersic.py
+[I 2024-09-13 09:49:17.126 ServerApp] Saving file at /virgotng_profit.ipynb
+[I 2024-09-13 09:51:05.123 ServerApp] Saving file at /virgotng_profit.ipynb
+[I 2024-09-13 09:53:05.540 ServerApp] Saving file at /virgotng_profit.ipynb
+[I 2024-09-13 09:53:35.477 ServerApp] Saving file at /Morphologies_ProFit_HSC_Sersic.py
+[I 2024-09-13 09:53:51.778 ServerApp] Saving file at /Morphologies_ProFit_HSC_Sersic.sl
+[I 2024-09-13 09:54:13.011 ServerApp] Saving file at /Morphologies_ProFit_HSC_Sersic.sl
