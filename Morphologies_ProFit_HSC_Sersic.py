@@ -313,6 +313,9 @@ def main_mpi():
     mpi_rank = MPI.COMM_WORLD.Get_rank()
     mpi_name = MPI.Get_processor_name()
 
+    # Stagger jobs to avoid overloading SQL server
+    time.sleep(array_rank*mpi_rank)
+
     # Simulation identifiers
     universe = 'IllustrisTNG' # os.environ['UNIVERSE'] 
     simulation = 'TNG50-1' # os.environ['SIMULATION'] 
