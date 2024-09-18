@@ -14,7 +14,7 @@ camera = Sys.getenv('CAMERA')
 out_name = Sys.getenv('OUT_NAME')
 
 hdulist = Rfits_read(img_name, header=TRUE, pointer=FALSE)
-                      
+              
 # Stack bands for ProFound
 stack = propaneStackFlatInVar(
     image_list = list(
@@ -38,20 +38,35 @@ stack = propaneStackFlatInVar(
 # ProFound segmantation and measurements using stacked image
 # sigma = 4.8 pixels gives 1 arcsec seeing after convolution
 regions_stack = profoundProFound(
-    image=stack$image, sky=0, skyRMS = stack$skyRMS, skycut=0.5,
-    redosky = FALSE, box=c(64,64), boundstats=TRUE, nearstats=TRUE,
-    tolerance = 5, reltol = 0, watershed='ProFound',
-    pixcut=3, sigma=4.8 
+    image=stack$image, 
+    sky=0, 
+    skyRMS=stack$skyRMS,
+    skycut=1.5,
+    redosky=FALSE, 
+    box=c(64,64), 
+    boundstats=TRUE,
+    nearstats=TRUE,
+    groupstats=TRUE,
+    tolerance = 15,
+    reltol = -10,
+    watershed='ProFound',
+    pixcut=10,
+    sigma=1,
+    SBdilate=2,
+    verbose=FALSE,
+    keepsegims=TRUE,
+    dotot=TRUE,
+    docol=TRUE,
 )
 
 # Compute static g-Y colours using stacked segentation
 regions_blue = profoundProFound(
     image = hdulist[['SUBARU_HSC.R']]$imDat,
-    segim = regions_stack$segim_orig, static_photom = TRUE,
+    segim = regions_stack$segim, static_photom = TRUE,
 )
 regions_red = profoundProFound(
     image = hdulist[['SUBARU_HSC.Z']]$imDat,
-    segim = regions_stack$segim_orig, static_photom = TRUE,
+    segim = regions_stack$segim, static_photom = TRUE,
 )
 
 # Add g-Y colour as new column in segstats for AutoMerge
@@ -60,7 +75,7 @@ segstats_tmp$col <- regions_blue$segstats$mag - regions_red$segstats$mag
 
 groups = profoundAutoMerge(
     segim = regions_stack$segim_orig, segstats_tmp, 
-    spur_lim = 1e-4, col_lim = c(0,0.8), Ncut = 1
+    spur_lim = 2.0e-3, col_lim = c(0,0.8), Ncut = 1
 )
 segim_merged = profoundSegimKeep(
     segim=regions_stack$segim, segID_merge=groups$segID
