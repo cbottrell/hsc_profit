@@ -301,8 +301,6 @@ def main_mpi():
 
     from mpi4py import MPI
 
-    print('hello')
-
     # Read in job array size, id from environment
     # used to partition data for mpi processes
     array_size = int(os.environ['JOB_ARRAY_SIZE'])
