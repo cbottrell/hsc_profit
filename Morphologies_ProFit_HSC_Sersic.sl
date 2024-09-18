@@ -10,8 +10,8 @@
 #SBATCH --output=slurm/profit_%A_%a.out
 #SBATCH --error=slurm/profit_%A_%a.err
 #SBATCH --job-name=ProFit
-#SBATCH --mail-type=BEGIN
-#SBATCH --mail-user=bottrell
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=connor.bottrell@uwa.edu.au
 #SBATCH --export=NONE
    
 # Set working directory
@@ -52,7 +52,7 @@ export SIMULATION='TNG50-1'
 export DATABASE='IllustrisTNG50_1'
 export TABLE='Morphologies_ProFit_HSC_Sersic'
 
-export JOB_ARRAY_SIZE=4
+export JOB_ARRAY_SIZE=128
 export JOB_ARRAY_INDEX=$SLURM_ARRAY_TASK_ID
 
 echo $SLURM_JOB_NUM_NODES
