@@ -39,19 +39,20 @@ stack = propaneStackFlatInVar(
                       
 # ProFound segmantation and measurements using stacked image
 regions_stack = profoundProFound(
-    image = stack$image, sky = 0, skyRMS = stack$skyRMS,
-    redosky = FALSE, box=128, boundstats=TRUE, nearstats=TRUE,
-    tolerance = 6, reltol = 0, watershed='ProFound'
-    
+    image=stack$image, sky=0, skyRMS=stack$skyRMS, skycut=1.5,
+    redosky=FALSE, box=c(64,64), boundstats=TRUE, nearstats=TRUE,
+    groupstats=TRUE, tolerance = 15, reltol = -10, watershed='ProFound',
+    pixcut=10, sigma=1, SBdilate=2, verbose=FALSE, keepsegims=TRUE,
+    dotot=TRUE, docol=TRUE
 )
 
 # Compute static g-Y colours using stacked segentation
 regions_blue = profoundProFound(
-    image = hdulist[['SUBARU_HSC.G']]$imDat,
+    image = hdulist[['SUBARU_HSC.R']]$imDat,
     segim = regions_stack$segim, static_photom = TRUE,
 )
 regions_red = profoundProFound(
-    image = hdulist[['SUBARU_HSC.Y']]$imDat,
+    image = hdulist[['SUBARU_HSC.Z']]$imDat,
     segim = regions_stack$segim, static_photom = TRUE,
 )
 
@@ -60,8 +61,8 @@ segstats_tmp = regions_stack$segstats
 segstats_tmp$col <- regions_blue$segstats$mag - regions_red$segstats$mag
 
 groups = profoundAutoMerge(
-    segim = regions_stack$segim, segstats_tmp, 
-    spur_lim = 0.002, col_lim = c(0,3), Ncut = 1
+    segim = regions_stack$segim_orig, segstats_tmp, 
+    spur_lim = 2.0e-3, col_lim = c(0,0.8), Ncut = 1
 )
 segim_merged = profoundSegimKeep(
     segim=regions_stack$segim, segID_merge=groups$segID
@@ -72,9 +73,7 @@ regions_stack = profoundProFound(
     segim = segim_merged, static_photom = TRUE,
 )
 
-
 #regions_stack$segim = segim_merged
-
 
 #all_fits = foreach(band = bands)%dopar%{ #loop over bands
     
