@@ -867,7 +867,10 @@ class nonparametric:
         petro = pf.Petrosian(
             r_list, area_arr, flux_arr, flux_err=error_arr)
 
-        return petro.r_petrosian,r_list,flux_arr
+        if np.isnan(petro.r_petrosian):
+            return -99.,r_list,flux_arr
+        else:
+            return petro.r_petrosian,r_list,flux_arr
 
     def _total_flux_fraction(
         self, radius, total_fraction, total_flux, elliptical=True):
