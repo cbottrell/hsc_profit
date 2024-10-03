@@ -438,6 +438,8 @@ class nonparametric:
         
         self.asymmetry_cas = self._asymmetry_function(
             self.asymmetry_center, self.data, kind='cas')
+        if not np.isfinite(self.asymmetry_cas):
+            self.asymmetry_cas = -99.0
         
         # Outer Asymmetry
         
@@ -449,11 +451,15 @@ class nonparametric:
         
         self.asymmetry_outer = self._asymmetry_function(
             self.asymmetry_center, self.data, kind='outer')
+        if not np.isfinite(self.asymmetry_outer):
+            self.asymmetry_outer = -99.0
         
         # Shape Asymmetry (use primary mask as data)
         
         self.asymmetry_shape = self._asymmetry_function(
             self.asymmetry_center, self.primary_mask, kind='shape')
+        if not np.isfinite(self.asymmetry_shape):
+            self.asymmetry_shape = -99.0
         
         # CAS Asymmetry+ (all primary source pixels, no aperture)
         
@@ -462,6 +468,8 @@ class nonparametric:
         
         self.asymmetry_cas_nap = self._asymmetry_function_no_aperture(
             self.asymmetry_center_nap, self.data, kind='cas')
+        if not np.isfinite(self.asymmetry_cas_nap):
+            self.asymmetry_cas_nap = -99.0
         
         # Residual Asymmetry
         
@@ -470,6 +478,8 @@ class nonparametric:
         
         self.asymmetry_residual = self._asymmetry_function(
             self.asymmetry_residual_center, self.data-self.model, kind='residual')
+        if not np.isfinite(self.asymmetry_residual):
+            self.asymmetry_residual = -99.0
         
         # Residual Asymmetry+ (all primary source pixels, no aperture)
         
@@ -478,11 +488,19 @@ class nonparametric:
         
         self.asymmetry_residual_nap = self._asymmetry_function_no_aperture(
             self.asymmetry_residual_center_nap, self.data-self.model, kind='residual')
+        if not np.isfinite(self.asymmetry_residual_nap):
+            self.asymmetry_residual_nap = -99.0
+
+        # Flag bkg_asymmetry_density if bad
+        if not np.isfinite(self.bkg_asymmetry_density):
+            self.bkg_asymmetry_density = -99.0
         
         # Square!!! of RMS Asymmetry (A_RMS^2)
         
         self.asymmetry_rms2 = self._asymmetry_function(
             self.asymmetry_center, self.data, kind='rms')
+        if not np.isfinite(self.asymmetry_rms2):
+            self.asymmetry_rms2 = -99.0
         
         # CAS Concentration
         

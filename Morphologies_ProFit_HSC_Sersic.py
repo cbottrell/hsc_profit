@@ -315,12 +315,12 @@ def main_mpi():
     time.sleep(array_rank*mpi_rank)
 
     # Simulation identifiers
-    universe = 'IllustrisTNG' # os.environ['UNIVERSE'] 
-    simulation = 'TNG50-1' # os.environ['SIMULATION'] 
+    universe = os.environ['UNIVERSE'] 
+    simulation = os.environ['SIMULATION'] 
 
     # Mysql table identifiers
-    database = 'IllustrisTNG50_1' # os.environ['DATABASE'] 
-    table = 'Morphologies_ProFit_HSC_Sersic' # os.environ['TABLE'] 
+    database = os.environ['DATABASE'] 
+    table = os.environ['TABLE'] 
     # Commit results to database?
     db_commit=True
 
@@ -352,7 +352,7 @@ def main_mpi():
     mpi_iters = array_iters[mpi_rank::mpi_size]
         
     # Loop over tasks assigned to this mpi process
-    for iterable in mpi_iters[::-1]:
+    for iterable in mpi_iters:
         
         index = int(iterable[0])
         row = df.loc[index]
@@ -360,8 +360,6 @@ def main_mpi():
         subfindid = row['SubfindID']
         camera = iterable[1]
         band = iterable[2]
-
-        print(snapnum,subfindid,camera,band)
     
         # Set up paths to image directories
         virgotng_path = f'{scratch_path}/Simulations/virgotng'
