@@ -1038,8 +1038,11 @@ class nonparametric:
         ap_area = ap.do_photometry(self.primary_mask, method='exact')[0][0]
         
         SB_1kpc = self.zeropoint - 2.5 * np.log10( ap_sum / ap_area / self.pixel_scale**2 ) 
-        
-        return SB_1kpc
+
+        if not np.isfinite(SB_1kpc):
+            return -99.0
+        else:
+            return SB_1kpc
         
 
 # npmorph = nonparametric(
