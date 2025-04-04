@@ -2,11 +2,11 @@
 #SBATCH --account=pawsey0119
 #SBATCH --partition=work
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=8
+#SBATCH --ntasks-per-node=16
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=14G
+#SBATCH --mem=30G 
 #SBATCH --time=23:59:59
-#SBATCH --array=0-127
+#SBATCH --array=0-15
 #SBATCH --output=slurm/profit_%A_%a.out
 #SBATCH --error=slurm/profit_%A_%a.err
 #SBATCH --job-name=ProFit
@@ -48,14 +48,18 @@ export PKG_CONFIG_PATH=/software/setonix/2024.05/software/linux-sles15-zen3/gcc-
 # Job environment variables
 
 export UNIVERSE='IllustrisTNG'
-export SIMULATION='TNG50-1'
-export DATABASE='IllustrisTNG50_1'
+export SIMULATION='TNG100-1'
+export DATABASE='TNG100_1'
+export SNAPMIN=72
+export SNAPMAX=91
+export MSTARMIN=10
+
 export TABLE='Morphologies_ProFit_HSC_Sersic'
 
-export JOB_ARRAY_SIZE=128
+export JOB_ARRAY_SIZE=$SLURM_ARRAY_TASK_COUNT
 export JOB_ARRAY_INDEX=$SLURM_ARRAY_TASK_ID
 
 echo $SLURM_JOB_NUM_NODES
 echo $SLURM_NTASKS
 
-srun -N $SLURM_JOB_NUM_NODES -n $SLURM_NTASKS -c 1 -m block:block:block python Morphologies_ProFit_HSC_Sersic.py
+srun -N $SLURM_JOB_NUM_NODES -n $SLURM_NTASKS -c 1 -m block:block:block python -m mpi4py Morphologies_ProFit_HSC_Sersic.py

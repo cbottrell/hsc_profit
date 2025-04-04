@@ -92,6 +92,11 @@ def ProFit_HSC_Sersic(
             dbcmd = mysql_table_update_cmd(record, table, databaseid)
             mymysql.submit(dbcmd, database=database, cnf_path=cnf_path)
         return
+
+    if not os.access(out_name,0):
+        raise Exception(
+            f'Could not create file {out_name}. Check scratch quota.'
+        )
     
     # Long form column names (e.g. sersic.nser), convert to short
     columns = hdul_out[f'SUBARU_HSC.{band}.posterior'].columns.names
@@ -208,6 +213,11 @@ def ProFit_HSC_Sersic(
         except:
             print(f'Could not add full record for {databaseid} to {table}. Skipping...\n')
 
+    # remove all but camera v0 if everything went well
+    if record['ProcessFlag']==0 and camera in ['v1','v2','v3']:
+        #os.remove(img_name)
+        os.remove(out_name)
+
     return
         
 
@@ -312,7 +322,7 @@ def main_mpi():
     mpi_name = MPI.Get_processor_name()
 
     # Stagger jobs to avoid overloading SQL server
-    time.sleep(array_rank*mpi_rank)
+    time.sleep(array_rank*mpi_rank*10)
 
     # Simulation identifiers
     universe = os.environ['UNIVERSE'] 
@@ -325,13 +335,16 @@ def main_mpi():
     db_commit=True
 
     # Set limits of snapnum, choose subhalos
-    snapmin = 72
-    snapmax = 91
-    logmstar_min = 9.
+    snapmin = int(os.environ['SNAPMIN'])
+    snapmax = int(os.environ['SNAPMAX'])
+    logmstar_min = float(os.environ['MSTARMIN'])
     logmstar_max = 99.
 
     # Camera angles and bands (independent tasks)
-    cameras = ['v0','v1','v2','v3']
+    if universe == 'Simba':
+        cameras = ['v0',]
+    else:
+        cameras = ['v0','v1','v2','v3']
     bands = ['g','r','i','z','y']
     
     dbcmd = ' '.join([
@@ -352,7 +365,7 @@ def main_mpi():
     mpi_iters = array_iters[mpi_rank::mpi_size]
         
     # Loop over tasks assigned to this mpi process
-    for iterable in mpi_iters:
+    for iterable in mpi_iters[::-1]:
         
         index = int(iterable[0])
         row = df.loc[index]
@@ -379,19 +392,19 @@ def main_mpi():
 def main_single():
 
     # Simulation identifiers
-    universe = 'IllustrisTNG'
-    simulation = 'TNG50-1'
+    universe = 'Simba'
+    simulation = 'Simba100-1'
 
     # Mysql table identifiers
-    database = 'IllustrisTNG50_1'
+    database = 'Simba100_1'
     table = 'Morphologies_ProFit_HSC_Sersic'
     # Commit results to database?
-    db_commit=False
+    db_commit=True
 
-    snapnum=73
-    subfindid=479757
-    camera='v2'
-    band='g'
+    snapnum=145
+    subfindid=65390
+    camera='v0'
+    band='r'
 
     # Set up paths to image directories
     virgotng_path = f'{scratch_path}/Simulations/virgotng'

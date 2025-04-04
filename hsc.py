@@ -20,7 +20,7 @@ def colour_image(
     image_path, axes, 
     universe, simulation, snapnum, subfindid, camera, 
     bands='gri', level = 'realistic', # or 'idealized'
-    zoom_factor = 1. 
+    zoom_factor = 1.,
 ):
 
     # file path (for idealized / realistic)
