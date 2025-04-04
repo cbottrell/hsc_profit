@@ -21,3 +21,4 @@ dbcmd = [
 ]
 
 df = query_df(' '.join(dbcmd), database='IllustrisTNG50_1',cnf_path='/home/bottrell/.mysql/ningaloo.cnf')
+df.loc[:, ~df.columns.duplicated()].to_csv('catalogues/HaloFlow_TNG50-1.csv', index=False)

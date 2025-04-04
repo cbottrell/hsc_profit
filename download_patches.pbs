@@ -1,0 +1,17 @@
+#!/bin/bash 
+#PBS -N patches
+#PBS -o /home/connor.bottrell/Scratch/pbs
+#PBS -e /home/connor.bottrell/Scratch/pbs
+#PBS -l select=1:ncpus=1:mem=6gb
+#PBS -l walltime=24:00:00
+#PBS -u bottrell
+#PBS -M connor.bottrell@uwa.edu.au
+#PBS -m ae
+#PBS -V
+#PBS -q tiny
+
+source ~/.bash_profile
+conda activate astrophot
+
+cd /lustre/work/connor.bottrell/Simulations/virgotng/scripts/morphologies
+python download_patches.py
